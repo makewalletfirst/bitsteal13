@@ -12,6 +12,15 @@
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
+    
+    const int nHeightNext = pindexLast ? (pindexLast->nHeight + 1) : 0;
+    if (nHeightNext >= params.nForkHeight) {
+    // 포크 이후 즉시 최저 난이도
+        return UintToArith256(params.powLimitPostFork).GetCompact();
+    }
+
+
+
     assert(pindexLast != nullptr);
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
@@ -124,19 +133,14 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
 {
-    bool fNegative;
-    bool fOverflow;
-    arith_uint256 bnTarget;
+    // 프리/포스트 포크 중 더 느슨한 powLimit 허용
+    const arith_uint256 pre  = UintToArith256(params.powLimit);
+    const arith_uint256 post = UintToArith256(params.powLimitPostFork);
+    const arith_uint256 bnLimit = (pre > post) ? pre : post;
 
-    bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
-
-    // Check range
-    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
-        return false;
-
-    // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget)
-        return false;
-
+    arith_uint256 bnTarget; bool fNeg=false, fOv=false;
+    bnTarget.SetCompact(nBits, &fNeg, &fOv);
+    if (fNeg || bnTarget==0 || fOv || bnTarget > bnLimit) return false;
+    if (UintToArith256(hash) > bnTarget) return false;
     return true;
 }
