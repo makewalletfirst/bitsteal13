@@ -82,7 +82,7 @@ public:
         consensus.fPowNoRetargeting = false;
 	
 	
-	consensus.nForkHeight = 1281; //위에서 스탑하고 확인해야함
+	consensus.nForkHeight = 2548; //위에서 스탑하고 확인해야함
         consensus.powLimitPostFork = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
         consensus.fPowAllowMinDifficultyBlocksPostFork = true;
         consensus.fPowNoRetargetingPostFork = true;
