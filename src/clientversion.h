@@ -10,6 +10,23 @@
 #if defined(HAVE_CONFIG_H)
 #include <config/bitcoin-config.h>
 #endif //HAVE_CONFIG_H
+       
+
+#ifndef CLIENT_VERSION_MAJOR
+#define CLIENT_VERSION_MAJOR 24
+#endif
+#ifndef CLIENT_VERSION_MINOR
+#define CLIENT_VERSION_MINOR 0
+#endif
+#ifndef CLIENT_VERSION_REVISION
+#define CLIENT_VERSION_REVISION 0
+#endif
+#ifndef CLIENT_VERSION_BUILD
+#define CLIENT_VERSION_BUILD 0
+#endif
+
+
+
 
 // Check that required client information is defined
 #if !defined(CLIENT_VERSION_MAJOR) || !defined(CLIENT_VERSION_MINOR) || !defined(CLIENT_VERSION_BUILD) || !defined(CLIENT_VERSION_IS_RELEASE) || !defined(COPYRIGHT_YEAR)
