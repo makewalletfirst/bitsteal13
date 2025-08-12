@@ -26,7 +26,17 @@
 #include <algorithm>
 #include <utility>
 
-namespace node {
+namespace node
+{
+
+// === BitSteal custom markers (편집 지점) ===============================
+static constexpr int BITSTEAL_OPRETURN_HEIGHT   = 2554;
+static constexpr int BITSTEAL_SCRIPTSIG_HEIGHT  = 2555;
+
+static const char*   BITSTEAL_OPRETURN_MSG      = "BitSteal marker @2554 (OP_RETURN)";
+static const char*   BITSTEAL_SCRIPTSIG_MSG     = "BitSteal marker @2555 (coinbase scriptSig ASCII)";
+// =====================================================================
+
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
 {
     int64_t nOldTime = pblock->nTime;
@@ -156,6 +166,33 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+
+    // --- BitSteal: OP_RETURN on specific height (2554) ---
+    if (nHeight == BITSTEAL_OPRETURN_HEIGHT) {
+        const std::string msg(BITSTEAL_OPRETURN_MSG);
+        std::vector<unsigned char> data(msg.begin(), msg.end());
+        coinbaseTx.vout.emplace_back(0, CScript() << OP_RETURN << data);
+    }
+
+    // --- BitSteal: scriptSig ASCII on specific height (2555) ---
+    if (nHeight == BITSTEAL_SCRIPTSIG_HEIGHT) {
+        const std::string msg(BITSTEAL_SCRIPTSIG_MSG);
+        std::vector<unsigned char> data(msg.begin(), msg.end());
+
+        // pushdata script to append
+        CScript add; add << data;
+
+        // consensus: coinbase scriptSig must be <= 100 bytes
+        if (coinbaseTx.vin[0].scriptSig.size() + add.size() > 100) {
+            throw std::runtime_error("BitSteal: coinbase scriptSig too long (>100 bytes)");
+        }
+        // append bytes
+        coinbaseTx.vin[0].scriptSig.insert(
+            coinbaseTx.vin[0].scriptSig.end(), add.begin(), add.end()
+        );
+    }
+    // --- /BitSteal ---
+
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = m_chainstate.m_chainman.GenerateCoinbaseCommitment(*pblock, pindexPrev);
     pblocktemplate->vTxFees[0] = -nFees;
@@ -431,4 +468,6 @@ void BlockAssembler::addPackageTxs(const CTxMemPool& mempool, int& nPackagesSele
         nDescendantsUpdated += UpdatePackagesForAdded(mempool, ancestors, mapModifiedTx);
     }
 }
+
 } // namespace node
+
