@@ -165,7 +165,12 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+    
+    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0
+    << std::vector<unsigned char>(
+        (const unsigned char*)"Bitsteal Miner", 
+        (const unsigned char*)"Bitsteal Miner" + strlen("Bitsteal Miner"));
+
 
     // --- BitSteal: OP_RETURN on specific height (2554) ---
     if (nHeight == BITSTEAL_OPRETURN_HEIGHT) {
